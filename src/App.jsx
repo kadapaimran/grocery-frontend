@@ -22,7 +22,7 @@ function App() {
   return (
     <CartProvider>
       {/* Changed basename to /ecommerce */}
-      <BrowserRouter basename="/ecommerce">
+      <BrowserRouter basename="/frontapp1/">
         <Routes>
           {/* ================= USER ROUTES ================= */}
           <Route path="/" element={<HomePage />}>
