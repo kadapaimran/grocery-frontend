@@ -1,4 +1,4 @@
-// ProductPage.jsx - Improved React Component (Null-Safe)
+// ProductPage.jsx - Improved React Component (Null-Safe & Fixed)
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getProducts } from "../services/productService";
@@ -35,10 +35,12 @@ const ProductPage = () => {
       setError(null);
       try {
         const data = await getProducts(category || "");
-        setProducts(data || []);
+        // Ensure we always have an array, even if API returns null/undefined
+        setProducts(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to fetch products:", err);
         setError("Failed to load products. Please try again later.");
+        setProducts([]); // Ensure products is always an array
       } finally {
         setLoading(false);
       }
@@ -88,41 +90,48 @@ const ProductPage = () => {
     e.target.classList.add('image-loaded');
   }, []);
 
-  // Optimized filtering and sorting with useMemo (null-safe)
+  // 🔧 FIXED: Optimized filtering and sorting with useMemo (TRULY null-safe)
   const filteredProducts = useMemo(() => {
-    if (!products.length) return [];
+    // Double-check that we have valid data
+    if (!products || !Array.isArray(products) || !products.length) {
+      return [];
+    }
 
-    let result = [...products];
+    // Filter out completely null/undefined products first
+    let result = products.filter(product => product != null);
 
     // Search filter
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
-      result = result.filter((product) =>
-        (product.name && product.name.toLowerCase().includes(searchLower)) ||
-        (product.description && product.description.toLowerCase().includes(searchLower))
-      );
+      result = result.filter((product) => {
+        const name = product.name || "";
+        const description = product.description || "";
+        return name.toLowerCase().includes(searchLower) ||
+               description.toLowerCase().includes(searchLower);
+      });
     }
 
     // Price filter
     if (filterBy !== "all" && PRICE_RANGES[filterBy]) {
       const [min, max] = PRICE_RANGES[filterBy];
       result = result.filter((product) => {
-        const price = product.price ?? 0;
-        return price >= min && price < max;
+        const price = Number(product.price) || 0;
+        return price >= min && (max === Infinity ? price >= max : price < max);
       });
     }
 
-    // Sorting (null-safe)
+    // 🔧 FIXED: Sorting (TRULY null-safe)
     result.sort((a, b) => {
       switch (sortBy) {
         case "price-low":
-          return (a.price ?? 0) - (b.price ?? 0);
+          return (Number(a.price) || 0) - (Number(b.price) || 0);
         case "price-high":
-          return (b.price ?? 0) - (a.price ?? 0);
+          return (Number(b.price) || 0) - (Number(a.price) || 0);
         case "name":
         default: {
-          const nameA = a?.name ?? "";
-          const nameB = b?.name ?? "";
+          // ✅ FIX: Convert null/undefined to empty string using String()
+          const nameA = String(a?.name ?? "");
+          const nameB = String(b?.name ?? "");
           return nameA.localeCompare(nameB);
         }
       }
@@ -251,7 +260,7 @@ const ProductPage = () => {
                 )}
                 <div className="price-container">
                   <span className="product-price">
-                    ₹{(product.price ?? 0).toLocaleString('en-IN')}
+                    ₹{(Number(product.price) || 0).toLocaleString('en-IN')}
                   </span>
                 </div>
                 
