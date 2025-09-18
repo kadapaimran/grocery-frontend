@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const BASE_URL = "http://localhost:8088/springapp1/api/products";
+const BASE_URL = "http://localhost:9090/springapp1/api/products";
 
 export const getProducts = async (category) => {
   try {
