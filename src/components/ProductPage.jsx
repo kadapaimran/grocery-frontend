@@ -1,4 +1,4 @@
-// ProductPage.jsx - Improved React Component
+// ProductPage.jsx - Improved React Component (Null-Safe)
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getProducts } from "../services/productService";
@@ -52,7 +52,6 @@ const ProductPage = () => {
     
     try {
       await addToCart(product);
-      // Show success toast instead of alert
       showToast("Added to cart successfully!", "success");
     } catch (error) {
       console.error("Failed to add to cart:", error);
@@ -63,15 +62,12 @@ const ProductPage = () => {
   }, [addToCart]);
 
   const showToast = (message, type) => {
-    // Simple toast implementation - you can replace with your preferred toast library
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.textContent = message;
     document.body.appendChild(toast);
     
-    setTimeout(() => {
-      toast.classList.add('toast-show');
-    }, 100);
+    setTimeout(() => toast.classList.add('toast-show'), 100);
     
     setTimeout(() => {
       toast.classList.remove('toast-show');
@@ -92,7 +88,7 @@ const ProductPage = () => {
     e.target.classList.add('image-loaded');
   }, []);
 
-  // Optimized filtering and sorting with useMemo
+  // Optimized filtering and sorting with useMemo (null-safe)
   const filteredProducts = useMemo(() => {
     if (!products.length) return [];
 
@@ -102,7 +98,7 @@ const ProductPage = () => {
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
       result = result.filter((product) =>
-        product.name.toLowerCase().includes(searchLower) ||
+        (product.name && product.name.toLowerCase().includes(searchLower)) ||
         (product.description && product.description.toLowerCase().includes(searchLower))
       );
     }
@@ -110,21 +106,25 @@ const ProductPage = () => {
     // Price filter
     if (filterBy !== "all" && PRICE_RANGES[filterBy]) {
       const [min, max] = PRICE_RANGES[filterBy];
-      result = result.filter((product) => 
-        product.price >= min && product.price < max
-      );
+      result = result.filter((product) => {
+        const price = product.price ?? 0;
+        return price >= min && price < max;
+      });
     }
 
-    // Sorting
+    // Sorting (null-safe)
     result.sort((a, b) => {
       switch (sortBy) {
         case "price-low":
-          return a.price - b.price;
+          return (a.price ?? 0) - (b.price ?? 0);
         case "price-high":
-          return b.price - a.price;
+          return (b.price ?? 0) - (a.price ?? 0);
         case "name":
-        default:
-          return a.name.localeCompare(b.name);
+        default: {
+          const nameA = a?.name ?? "";
+          const nameB = b?.name ?? "";
+          return nameA.localeCompare(nameB);
+        }
       }
     });
 
@@ -231,8 +231,8 @@ const ProductPage = () => {
             <article key={product.id} className="product-card">
               <div className="product-image-container">
                 <img
-                  src={product.imagePath}
-                  alt={product.name}
+                  src={product.imagePath || DEFAULT_IMAGE}
+                  alt={product.name || "Unnamed Product"}
                   onClick={() => handleProductClick(product.id)}
                   onError={handleImageError}
                   onLoad={handleImageLoad}
@@ -245,19 +245,21 @@ const ProductPage = () => {
               </div>
               
               <div className="product-info">
-                <h3 className="product-name">{product.name}</h3>
+                <h3 className="product-name">{product.name || "Unnamed Product"}</h3>
                 {product.description && (
                   <p className="product-description">{product.description}</p>
                 )}
                 <div className="price-container">
-                  <span className="product-price">₹{product.price.toLocaleString('en-IN')}</span>
+                  <span className="product-price">
+                    ₹{(product.price ?? 0).toLocaleString('en-IN')}
+                  </span>
                 </div>
                 
                 <button
                   onClick={() => handleAddToCart(product)}
                   disabled={addingToCart[product.id]}
                   className={`add-to-cart-btn ${addingToCart[product.id] ? 'loading' : ''}`}
-                  aria-label={`Add ${product.name} to cart`}
+                  aria-label={`Add ${product.name || "product"} to cart`}
                 >
                   {addingToCart[product.id] ? (
                     <>
