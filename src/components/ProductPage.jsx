@@ -27,7 +27,7 @@ const ProductPage = () => {
   }), []);
 
   // Default image for broken links
-  const DEFAULT_IMAGE = "https://via.placeholder.com/300x300/f0f0f0/666666?text=No+Image";
+  const DEFAULT_IMAGE = "https://th.bing.com/th/id/OIP.wPjOsacGuRUjiOEUJmhRDgHaHa?w=179&h=180&c=7&r=0&o=7&dpr=1.3&pid=1.7&rm=3";
 
   useEffect(() => {
     const fetchProducts = async () => {
